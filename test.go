@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -10,17 +9,26 @@ import (
 
 var addr = flag.String("127.0.0.1", ":1718", "http service address") // Q=17, R=18
 
-var templ = template.Must(template.New("qr").Parse(templateStr))
-
 func main() {
 	flag.Parse()
-	http.Handle("/", http.HandlerFunc(QR))
-	err := http.ListenAndServe(*addr, nil)
+	//http.Handle("/", http.HandlerFunc(QR))
+	err := http.ListenAndServe(*addr, http.HandlerFunc(mainHandler))
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
 
+func mainHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "POST" {
+		io.WriteString(w, "please use post method.<br />")
+		io.WriteString(w, req.URL.Path)
+		req.Host = "www.qq.com"
+		//templ.Execute(w, req.FormValue("s"))
+		return
+	}
+}
+
+/*
 func QR(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		io.WriteString(w, "please use post method.")
@@ -49,3 +57,4 @@ value="Show QR" name=qr>
 </body>
 </html>
 `
+*/
