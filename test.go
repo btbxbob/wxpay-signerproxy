@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	//"fmt"
 	"io"
+	//"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -20,10 +22,31 @@ func main() {
 
 func mainHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
-		io.WriteString(w, "please use post method.<br />")
-		io.WriteString(w, req.URL.Path)
-		req.Host = "www.qq.com"
-		//templ.Execute(w, req.FormValue("s"))
+		//io.WriteString(w, "please use post method.<br />")
+		//io.WriteString(w, req.URL.Path)
+		//log.Println("https://weixin.qq.com" + req.URL.Path)
+		newReq, err := http.NewRequest(req.Method, "https://weixin.qq.com"+req.URL.Path, nil)
+		//newReq.URL.Host = "weixin.qq.com"
+		//newReq.Host = newReq.URL.Host
+		//newReq.URL.Path = req.URL.Path
+
+		client := &http.Client{}
+		resp, err := client.Do(newReq)
+
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		defer resp.Body.Close()
+
+		//body, err := ioutil.ReadAll(resp.Body)
+		//log.Println(string(body))
+
+		io.Copy(w, resp.Body)
+
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 		return
 	}
 }
