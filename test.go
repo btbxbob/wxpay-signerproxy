@@ -24,10 +24,12 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		//io.WriteString(w, "please use post method.<br />")
 		//io.WriteString(w, req.URL.Path)
-		//log.Println("https://weixin.qq.com" + req.URL.Path)
-		newReq, err := http.NewRequest(req.Method, "https://weixin.qq.com"+req.URL.Path, nil)
-		//newReq.URL.Host = "weixin.qq.com"
-		//newReq.Host = newReq.URL.Host
+		log.Println(req.URL.String())
+		newReq, err := http.NewRequest(req.Method, req.URL.String(), nil)
+		newReq.Header = req.Header
+		newReq.URL.Host = "api.mch.weixin.qq.com"
+		newReq.Host = newReq.URL.Host
+		newReq.URL.Scheme = "https"
 		//newReq.URL.Path = req.URL.Path
 
 		client := &http.Client{}
@@ -37,11 +39,14 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err.Error())
 		}
 
+		log.Println(resp.StatusCode)
+
 		defer resp.Body.Close()
 
 		//body, err := ioutil.ReadAll(resp.Body)
 		//log.Println(string(body))
 
+		//resp.Write(w)
 		io.Copy(w, resp.Body)
 
 		if err != nil {
