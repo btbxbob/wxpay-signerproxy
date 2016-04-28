@@ -1,22 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 )
 
+// Configuration to load from json
 type Configuration struct {
+	// listen address, like:"0.0.0.0:80"
 	Listen string
+	// Key 秘钥，在商户平台的API安全里设置
+	Key string
 }
 
 func main() {
-	//read json file
-	config_file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(config_file)
+	// init logger
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	// log.SetOutput(&lumberjack.Logger{
+	// 	Filename:   "log.txt",
+	// 	MaxSize:    20,
+	// 	MaxBackups: 9,
+	// })
+	// configFile Load config json.
+	configFile, _ := os.Open("config.json")
+	decoder := json.NewDecoder(configFile)
 	config := Configuration{}
 	err := decoder.Decode(&config)
 	if err != nil {
@@ -30,32 +43,36 @@ func main() {
 	}
 }
 
+// mainHandler HTTP Handler func.
 func mainHandler(w http.ResponseWriter, req *http.Request) {
-	//只处理Post方法
-	if req.Method != "POST" {
-		log.Println(req.URL.String())
-		newReq, err := http.NewRequest(req.Method, req.URL.String(), nil)
-		newReq.Header = req.Header
-		newReq.URL.Host = "api.mch.weixin.qq.com"
-		newReq.Host = newReq.URL.Host
-		newReq.URL.Scheme = "https"
+	//if req.Method != "POST" {
+	log.Println(req.URL.String())
+	body, err := ioutil.ReadAll(req.Body)
+	log.Println(string(body))
+	// 在这里处理body
+	newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewReader(body))
+	newReq.Header = req.Header
+	newReq.URL.Host = "api.mch.weixin.qq.com"
+	newReq.Host = newReq.URL.Host
+	//newReq.Body = body
+	newReq.URL.Scheme = "https"
 
-		client := &http.Client{}
-		resp, err := client.Do(newReq)
+	client := &http.Client{}
+	resp, err := client.Do(newReq)
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		log.Println(resp.StatusCode)
-
-		defer resp.Body.Close()
-
-		io.Copy(w, resp.Body)
-
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		return
+	if err != nil {
+		log.Fatal(err.Error())
 	}
+
+	log.Println(resp.StatusCode)
+
+	defer resp.Body.Close()
+
+	io.Copy(w, resp.Body)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	return
+	//}
 }
