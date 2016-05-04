@@ -4,8 +4,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -21,15 +19,6 @@ type Configuration struct {
 	Key string
 	// IsLoad 判断是否已经载入配置
 	IsLoad bool
-}
-
-type nameValue struct {
-	XMLName xml.Name `xml:""`
-	Value   string   `xml:",cdata"`
-}
-
-type xmlRootStruct struct {
-	Elements []nameValue `xml:",any"`
 }
 
 var config = Configuration{}
@@ -53,7 +42,7 @@ func main() {
 	}
 	log.Println("listen address:", config.Listen)
 	config.IsLoad = true
-	err = http.ListenAndServe(config.Listen, http.HandlerFunc(mainHandler))
+	err = http.ListenAndServeTLS(config.Listen, "server.crt", "server.key", http.HandlerFunc(mainHandler))
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
@@ -65,15 +54,8 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	log.Println(req.URL.String())
 	body, err := ioutil.ReadAll(req.Body)
 	//log.Println(string(body))
-	// 在这里处理body
-	v := new(xmlRootStruct)
-	err = xml.Unmarshal([]byte(body), v)
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		return
-	}
-	log.Printf("v = %#v\n", v)
-	//xmlDecoder := xml.NewDecoder(req.Body)
+	tmp, err := XMLStructToMap(body)
+	log.Printf("%#v", tmp)
 
 	newReq, err := http.NewRequest(req.Method, req.URL.String(), bytes.NewReader(body))
 	newReq.Header = req.Header
