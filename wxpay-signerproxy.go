@@ -53,7 +53,6 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	//if req.Method != "POST" {
 	log.Println(req.URL.String())
 	body, err := ioutil.ReadAll(req.Body)
-	//log.Println(string(body))
 	tmp, err := XMLStructToMap(body)
 	log.Printf("%#v", tmp)
 

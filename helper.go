@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"log"
 	"sort"
 	"strings"
@@ -35,6 +36,31 @@ func XMLStructToMap(xmlRawData []byte) (result map[string]string, err error) {
 	return result, nil
 }
 
+// CompareSignature compare between original sign and calculated sign
+func CompareSignature(xmlRawData []byte) (bool, error) {
+	if !config.IsLoad {
+		return false, errors.New("config not loaded")
+	}
+	mapData, _ := XMLStructToMap(xmlRawData)
+	sign, _ := CalculateSignature(mapData, config.Key)
+	if mapData["sign"] == sign {
+		return true, nil
+	}
+	return false, nil
+}
+
+// MapToXML roughly turn map back to <xml><key>value</key></xml>
+func MapToXML(mapData map[string]string) (result []byte, err error) {
+	var xmlString string
+	xmlString = "<xml>\n"
+	for k, v := range mapData {
+		xmlString = xmlString + "<" + k + ">" + v + "</" + k + ">\n"
+	}
+	xmlString = xmlString + "</xml>"
+	result = []byte(xmlString)
+	return result, err
+}
+
 // CalculateSignature return sign string
 func CalculateSignature(fields map[string]string, key string) (result string, err error) {
 	var keyList []string
@@ -50,11 +76,11 @@ func CalculateSignature(fields map[string]string, key string) (result string, er
 		}
 	}
 	toSignString = toSignString + "key=" + key
-	log.Printf("%#v\n", toSignString)
+	//log.Printf("%#v\n", toSignString)
 	hasher := md5.New()
 	hasher.Write([]byte(toSignString))
 	result = hex.EncodeToString(hasher.Sum(nil))
 	result = strings.ToUpper(result)
-	log.Printf("%s\n", result)
+	//log.Printf("%s\n", result)
 	return result, nil
 }
