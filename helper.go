@@ -1,8 +1,12 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/xml"
 	"log"
+	"sort"
+	"strings"
 )
 
 type nameValue struct {
@@ -32,6 +36,25 @@ func XMLStructToMap(xmlRawData []byte) (result map[string]string, err error) {
 }
 
 // CalculateSignature return sign string
-func CalculateSignature(fields map[string]string, key string) (result string) {
-	return result
+func CalculateSignature(fields map[string]string, key string) (result string, err error) {
+	var keyList []string
+	for k := range fields {
+		keyList = append(keyList, k)
+	}
+	sort.Strings(keyList)
+	//log.Printf("%#v\n", keyList)
+	var toSignString string
+	for _, v := range keyList {
+		if v != "sign" {
+			toSignString = toSignString + v + "=" + fields[v] + "&"
+		}
+	}
+	toSignString = toSignString + "key=" + key
+	log.Printf("%#v\n", toSignString)
+	hasher := md5.New()
+	hasher.Write([]byte(toSignString))
+	result = hex.EncodeToString(hasher.Sum(nil))
+	result = strings.ToUpper(result)
+	log.Printf("%s\n", result)
+	return result, nil
 }
