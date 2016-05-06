@@ -22,20 +22,27 @@ import (
 
 // Configuration to load from json
 type Configuration struct {
-	// listen address, like:"0.0.0.0:80"
+	// 监听地址, like:"0.0.0.0:80"
 	Listen struct {
-		HTTP  string
+		// http协议监听地址
+		HTTP string
+		// https协议监听地址
 		HTTPS string
 	}
 	// Key 秘钥，在商户平台的API安全里设置
 	Key string
-	// Resign 是否重签名
+	// UseCert 是否使用证书
 	UseCert bool `json:"use_cert"`
-	Cert    struct {
+	// 证书配置
+	Cert struct {
+		// CertFile 证书文件路径
 		CertFile string
-		KeyFile  string
-		Ca       string
+		// KeyFile 秘钥文件路径
+		KeyFile string
+		// Ca CA证书路径
+		Ca string
 	}
+	// Resign 是否重签名
 	Resign bool
 	// LogToFile 是否记录到文件
 	LogToFile bool `json:"log_to_file"`
