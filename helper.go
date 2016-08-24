@@ -63,6 +63,7 @@ func MapToXML(mapData map[string]string) (result []byte, err error) {
 
 // CalculateSignature return sign string
 func CalculateSignature(fields map[string]string, key string) (result string, err error) {
+	//log.Printf("%s\n", key)
 	var keyList []string
 	for k := range fields {
 		keyList = append(keyList, k)
@@ -71,12 +72,12 @@ func CalculateSignature(fields map[string]string, key string) (result string, er
 	//log.Printf("%#v\n", keyList)
 	var toSignString string
 	for _, v := range keyList {
-		if v != "sign" {
+		if v != "sign" && fields[v] != "" {
 			toSignString = toSignString + v + "=" + fields[v] + "&"
 		}
 	}
 	toSignString = toSignString + "key=" + key
-	//log.Printf("%#v\n", toSignString)
+	//log.Printf("toSignString, %#v\n", toSignString)
 	hasher := md5.New()
 	hasher.Write([]byte(toSignString))
 	result = hex.EncodeToString(hasher.Sum(nil))
