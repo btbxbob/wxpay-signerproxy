@@ -11,6 +11,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"os"
 	"time"
 
@@ -56,6 +57,12 @@ var config Configuration
 var cert tls.Certificate
 var caCert []byte
 
+var httpsClient *http.Client
+
+func gotConnPrintReuse(info httptrace.GotConnInfo) {
+	log.Println("Is reused:", info.Reused)
+}
+
 func init() {
 	// init logger
 	config.IsLoad = false
@@ -94,6 +101,29 @@ func init() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	if config.UseCert {
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		// Setup HTTPS client
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      caCertPool,
+		}
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{
+			TLSClientConfig:     tlsConfig,
+			IdleConnTimeout:     8 * time.Second,
+			MaxIdleConnsPerHost: 10,
+		}
+		httpsClient = &http.Client{Transport: transport}
+	} else {
+		transport := &http.Transport{
+			IdleConnTimeout:     8 * time.Second,
+			MaxIdleConnsPerHost: 10,
+		}
+		httpsClient = &http.Client{Transport: transport}
 	}
 }
 
@@ -185,24 +215,14 @@ func mainHandler(w http.ResponseWriter, req *http.Request) {
 	newReq.Host = newReq.URL.Host
 	newReq.URL.Scheme = "https"
 
-	var client *http.Client
-	//cert
-	if config.UseCert {
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-		// Setup HTTPS client
-		tlsConfig := &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			RootCAs:      caCertPool,
-		}
-		tlsConfig.BuildNameToCertificate()
-		transport := &http.Transport{TLSClientConfig: tlsConfig}
-		client = &http.Client{Transport: transport}
-	} else {
-		client = &http.Client{}
+	//trace
+	trace := &httptrace.ClientTrace{
+		GotConn: gotConnPrintReuse,
 	}
 
-	resp, err := client.Do(newReq)
+	newReq = newReq.WithContext(httptrace.WithClientTrace(newReq.Context(), trace))
+
+	resp, err := httpsClient.Do(newReq)
 
 	if err != nil {
 		log.Fatal(err.Error())
