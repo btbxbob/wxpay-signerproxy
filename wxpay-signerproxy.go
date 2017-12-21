@@ -72,7 +72,7 @@ func init() {
 
 	err := decoder.Decode(&config)
 	if err != nil {
-		log.Println("error:", err)
+		log.Println("config error:", err)
 	}
 	log.Println("listen address:", config.Listen.HTTP, config.Listen.HTTPS)
 	config.IsLoad = true
